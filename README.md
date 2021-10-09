@@ -9,3 +9,5 @@ El trabajo trata de cómo hacer una simulación gráfica interactiva de un cuerp
 La tesis fue presentada en 2008. Sin embargo, decidí hacer una nueva edición usando herramientas modernas. Es decir reimplemente el programa e hice muchísimos cambios en el texto original.
 
 Recomiendo usar y consultar las versiones de este repositorio. Además de ser más modernas, la implementación es mucho más clara y el texto tiene varias correcciones. Si por alguna razón quisieras comparar con la versión del 2008. La UNAM permite descargar pdf de todas sus tesis desde la página del [sistema de bibliotecas](https://tesiunam.dgb.unam.mx), no hay permalinks, pero aqui esta la ficha:
+
+[Ejemplo](programa/Screenshoots/ficha.png)
