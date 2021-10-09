@@ -1,6 +1,8 @@
 # Tesis Licenciatura UNAM
 
-En este repositorio contiene el trabajo que presente para titularme de la licenciatura de [Matematicas Aplicadas y Computacion](https://mac.acatlan.unam.mx/) en la [FES Acatlan](https://www.acatlan.unam.mx/) de la [UNAM](https://www.unam.mx/). Está dividido en dos grandes secciones una contiene el código fuente del programa (C++, OpenGL, GLSL) que desarrolle como parte del trabajo y la otra contiene el texto de la tesis (en LaTeX) así como los archivos para producir todas las figuras del trabajo. Si estás solamente interesado en el pdf lo puedes descargar de aquí.
+Tesis Matemáticas Aplicadas y Computación UNAM
+
+Este repositorio contiene el trabajo que presente para titularme de la licenciatura de [Matemáticas Aplicadas y Computación](https://mac.acatlan.unam.mx/) en la [FES Acatlan](https://www.acatlan.unam.mx/) de la [UNAM](https://www.unam.mx/). Está dividido en dos grandes secciones una contiene el código fuente del programa (C++, OpenGL, GLSL) que desarrolle como parte del trabajo y la otra contiene el texto de la tesis (en LaTeX) así como los archivos para producir todas las figuras del trabajo. Si estás solamente interesado en el pdf lo puedes descargar de aquí.
 
 Si lo que estás buscando es una plantilla en LaTeX para escribir tu propia tesis, recomiendo usar la plantilla que cree para ese fin aquí. Pues es la base de este trabajo y créeme te será mucho más fácil de adaptar a tus necesidades. De igual manera, si lo que buscas es una plantilla para crear una aplicación gráfica interactiva con OpenGL, cree varias plantillas para ese fin en este repositorio. Misma idea, contiene todo lo que te interesa de este programa y te será más fácil de adaptar.
 
