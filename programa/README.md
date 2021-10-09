@@ -15,4 +15,4 @@ Si se tiene todas las dependencias instaladas, para compilar el programa solo se
 make
 make clean
 ```
-El segundo comando: `make clean` es por supuesto opcional y solo elimina todos los archivos intermedions generados en la compilación.
+El segundo comando: `make clean`, es por supuesto opcional y solo elimina todos los archivos intermedios generados en la compilación.
