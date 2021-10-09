@@ -2,7 +2,10 @@
 
 Este repositorio contiene el trabajo que presente para titularme de la licenciatura de [Matemáticas Aplicadas y Computación](https://mac.acatlan.unam.mx/) en la [FES Acatlan](https://www.acatlan.unam.mx/) de la [UNAM](https://www.unam.mx/).
 
-[Modelado Gráfico de un Cuerpo Neumático con OpenGL a Base de Ecuaciones Diferenciales](https://github.com/nemediano/TesisLicenciatura/texto) © 2008 por [Jorge Antonio García Galicia](https://www.linkedin.com/in/jorgegarciagalicia/) está licenciado bajo Creative Commons Attribution 4.0 International. ![cc](https://mirrors.creativecommons.org/presskit/icons/by.svg?ref=chooser-v1) ![by](https://mirrors.creativecommons.org/presskit/icons/by.svg)
+[Modelado Gráfico de un Cuerpo Neumático con OpenGL a Base de Ecuaciones Diferenciales](https://github.com/nemediano/TesisLicenciatura/texto) © 2008 por [Jorge Antonio García Galicia](https://www.linkedin.com/in/jorgegarciagalicia/) está licenciado bajo Creative Commons Attribution 4.0 International.
+
+![cc](https://mirrors.creativecommons.org/presskit/icons/cc.svg?) ![by](https://mirrors.creativecommons.org/presskit/icons/by.svg)
+
 Para ver una copia de esta licencia, visite http://creativecommons.org/licenses/by/4.0/
 
 El trabajo trata de cómo hacer una simulación gráfica interactiva de un cuerpo neumático. Es en esencia el desarrollo de un modelo que aplica la idea que presentaron Matyka Maciej y Ollila Mark en su trabajo [Pressure Model of Soft Body Simulation](https://arxiv.org/abs/physics/0407003)
