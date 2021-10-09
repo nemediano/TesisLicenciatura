@@ -2,7 +2,7 @@
 
 Esta programa aplica la idea que presentaron Matyka Maciej y Ollila Mark en su trabajo [Pressure Model of Soft Body Simulation](https://arxiv.org/abs/physics/0407003) para hacer una simulacion gráfica de un cuerpo neumático.
 
-[Ejemplo](Screenshoots/sample.png)
+![Ejemplo](Screenshoots/sample.png)
 
 Este programa esta liberado bajo la [licencia de MIT](https://opensource.org/licenses/MIT)
 
@@ -13,5 +13,6 @@ Hice pruebas para compilarlo bajo Windows y GNU/Linux. En particular en la distr
 Si se tiene todas las dependencias instaladas, para compilar el programa solo se requiere:
 ```
 make
-make clean %Eliminar archivos intermedios (opcional)
+make clean
 ```
+El segundo comando `make clean` es opcional y solo elimina todos los archivos intermedions generados en la compilación.
