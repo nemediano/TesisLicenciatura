@@ -8,7 +8,7 @@ Este programa está liberado bajo la [licencia de MIT](https://opensource.org/li
 
 El programa está escrito en C++ y utiliza OpenGL como API para hacer graficas. Requiere para compilarlo tener instaladas las bibliotecas [GLFW](https://www.glfw.org/), [GLEW](http://glew.sourceforge.net/), [GLM](https://github.com/g-truc/glm), [Assimp](https://assimp.org/) y [FreeImage](https://freeimage.sourceforge.io). Además usa la biblioteca [Dear Imgui](https://github.com/ocornut/imgui) para el menú de usuario, que está incluida en el código.
 
-Hice pruebas para compilarlo bajo Windows y GNU/Linux. En particular en la distribución [Ubuntu](https://ubuntu.com/), todas las dependencias pueden ser instaladas usando el gestor de paquetes y luego compilar usando el [Makefile](/Makefile). Recomiendo usar [Eclipse CDT](https://www.eclipse.org/cdt/) como IDE, pero es un gusto personal no un requerimiento.
+Hice pruebas para compilarlo bajo Windows y GNU/Linux. En particular en la distribución [Ubuntu](https://ubuntu.com/), todas las dependencias pueden ser instaladas usando el gestor de paquetes y luego compilar usando el [Makefile](Makefile). Recomiendo usar [Eclipse CDT](https://www.eclipse.org/cdt/) como IDE, pero es un gusto personal no un requerimiento.
 
 Si se tiene todas las dependencias instaladas, para compilar el programa solo se requiere:
 ```
