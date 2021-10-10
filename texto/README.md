@@ -1,6 +1,6 @@
 # Modelado Gráfico de un Cuerpo Neumático con OpenGL a Base de Ecuaciones Diferenciales
 
-Este repositorio contiene el trabajo que presente para titularme de la licenciatura de [Matemáticas Aplicadas y Computación](https://mac.acatlan.unam.mx/) en la [FES Acatlan](https://www.acatlan.unam.mx/) de la [UNAM](https://www.unam.mx/).
+Este directorio contiene el texto trabajo que presente para titularme de la licenciatura de [Matemáticas Aplicadas y Computación](https://mac.acatlan.unam.mx/) en la [FES Acatlan](https://www.acatlan.unam.mx/) de la [UNAM](https://www.unam.mx/).
 
 [Modelado Gráfico de un Cuerpo Neumático con OpenGL a Base de Ecuaciones Diferenciales](https://github.com/nemediano/TesisLicenciatura/texto) © 2008 por [Jorge Antonio García Galicia](https://www.linkedin.com/in/jorgegarciagalicia/) está licenciado bajo Creative Commons Attribution 4.0 International.
 

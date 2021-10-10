@@ -1,0 +1,80 @@
+%%%%Draft version
+% \documentclass[12pt,letterpaper,spanish,draft,twoside]{book}
+%%%%Final version
+\documentclass[12pt,letterpaper,spanish,twoside,final]{book}
+
+\usepackage{Thesis}
+% New bibliography system: biber (No bibtex needed)
+\usepackage[
+  backend=biber
+]{biblatex}
+\addbibresource{bibliografia.bib}
+
+%%%%For producing modified TOC with less space inbetween.
+\usepackage{tocloft}
+\setlength\cftparskip{-2pt}
+\setlength\cftbeforesecskip{1pt}
+\setlength\cftaftertoctitleskip{2pt}
+
+%\includeonly{dedicatoria} %Por debug solo compila un capitulo
+
+
+\begin{document}
+
+\selectlanguage{spanish}
+
+%%%%Change numbering to alphabetic
+%\pagenu⎄mbering{alph}
+
+%%%%Change numbering to roman
+\clearpage \pagenumbering{roman}
+%\listoftodos
+
+\include{Portada}
+\cleardoublepage
+
+\include{dedicatoria}
+\cleardoublepage
+
+\include{agradecimientos}
+\cleardoublepage
+
+\include{resumen}
+\cleardoublepage
+%%%%For changing the title of table of contents
+%\renewcommand*\contentsname{}
+\tableofcontents
+\cleardoublepage
+\listoffigures
+\cleardoublepage
+\listoftables
+\cleardoublepage
+%\listofalgorithms
+%\cleardoublepage
+
+
+%%%%Change numbering to arabic
+\clearpage \pagenumbering{arabic}
+
+\include{introduccion}
+
+\include{capitulo1}
+ 
+\include{capitulo2}
+
+\include{capitulo3}
+
+\include{capitulo4}
+
+\include{conclusiones}
+
+\include{apendice1}
+
+%\bibliographystyle{ieee_esp}
+\nocite{*} %Print the whole bibliography even the entries not explicitly cited in text
+
+\printbibliography
+
+\addcontentsline{toc}{chapter}{\bibname}
+
+\end{document}

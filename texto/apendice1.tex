@@ -1,0 +1,42 @@
+\chapter*{Apéndice: Sobre el software libre}
+\addcontentsline{toc}{chapter}{Apéndice}
+\markboth{APENDICE}{APENDICE}
+\label{sec:apendice}
+
+Un objetivo secundario cuando empecé a hacer esta tesis, fue que toda ella fuera hecha con \emph{software libre}, o al menos \emph{open source}.
+El software libre es aquel que cumple con las cuatro libertades definidas por la Free Software Foundation (\href{https://www.fsf.org}{www.fsf.org}).
+La libertad de usarlo para cualquier propósito, la libertad de estudiarlo y adaptarlo, la libertad de distribuir copias y la --polémica-- libertad de distribuir las mejoras.
+Si el software en cuestión sigue las tres primeras libertades, pero no la última es usualmente considerado \emph{open source}.
+En este sentido, todo software libre es open source, pero el open source no es necesariamente software  libre~\footnote{Admito que esta afirmación no es del todo correcta. Pero pragmáticamente puede pensarse así y no deseo entrar en debates innecesarios que tanto han dañado a ambas comunidades.}.
+
+Para ésta segunda edición, éste objetivo finalmente se cumplió. Toda la tesis y el programa fueron desarrollados con software libre u open source.
+
+Para empezar se utilizó gcc (\href{http://gcc.gnu.org/}{gcc.gnu.org}) como compilador de C++.
+Para acceder a OpenGL (\href{https://www.opengl.org/}{www.opengl.org}) se usó el driver libre de Intel (\href{https://01.org/linuxgraphics}{01.org/linuxgraphics}).
+Aunque también hice pruebas usando el driver propietario de Nvidia (\href{https://www.nvidia.com}{www.nvidia.com}), éste uso fue más una curiosidad que una necesidad y bien pudo haberse omitido.
+
+Para resolver las funciones de OpenGL (es decir como \emph{\textenglish{extension loader}}), se uso la biblioteca GLEW (\href{http://glew.sourceforge.net/}{glew.sourceforge.net}).
+Como biblioteca para la creación de ventanas y de interacción con el usuario utilicé GLFW (\href{https://www.glfw.org/}{www.glfw.org}).
+Para cargar y escribir imágenes usé FreeImage (\href{https://freeimage.sourceforge.io/}{freeimage.sourceforge.io}).
+Para el menú de usuario se usó la biblioteca Dear ImGui (\href{https://github.com/ocornut/imgui}{github.com/ocornut/imgui}).
+Para hacer mi vida mucho más sencilla, la biblioteca GLM (\href{https://github.com/g-truc/glm}{github.com/g-truc/glm}) cubrió mis necesidades de vectores, matrices y álgebra lineal en general.
+
+El texto de la tesis se escribió en \LaTeX, con la implementación de TeX Live (\href{https://tug.org/texlive/}{tug.org/texlive}).
+La gráfica de la Figura~\ref{OsciAmor:fig} fue hecha en el lenguaje de programación R (\href{https://www.r-project.org/}{https://www.r-project.org/}).
+Los diagramas de la Figura~\ref{diagrama_flujo:fig} y la Figura~\ref{clases:fig} fueron hechos en Dia (\href{http://dia-installer.de/index.html.en}{http://dia-installer.de}).
+El resto de las figuras (que no son \emph{\textenglish{screenshoots}} de mi programa) fueron hechas usando el editor de gráficos vectoriales Ipe (\href{https://ipe.otfried.org/}{ipe.otfried.org}).
+Cuando tuve la necesidad de hacer edición de imágenes tipo \emph{\textenglish{raster}} (es decir, con pixeles) use a veces Gimp (\href{https://www.gimp.org/}{www.gimp.org}) y a veces ImageMagick (\href{https://imagemagick.org/index.php}{imagemagick.org}), dependiendo de que acomodara mejor la situación.
+
+Todo el desarrollo se hizo en un sistema operativo GNU/Linux, en particular con la distribución Ubuntu (\href{https://ubuntu.com/}{ubuntu.com}).
+Para editar el texto usé Kile (\href{https://kile.sourceforge.io/}{kile.sourceforge.io}) y lo recomiendo ampliamente.
+Como IDE para desarrollar y depurar el programa utilicé Eclipse CTD (\href{https://www.eclipse.org/cdt/}{www.eclipse.org/cdt}) y cubrió todas mis necesidades.
+El control de versiones fue hecho en git (\href{https://git-scm.com/}{git-scm.com}) y como servicio de repositorios use GitHub (\href{https://github.com/}{github.com}).
+Esto último me permitió trabajar en más de una computadora cuando lo requerí y me dio la tranquilidad de tener siempre respaldos en la nube.
+
+Por último, hago disponible también a través de GitHub (\href{https://github.com/nemediano/TesisLicenciatura}{nemediano/TesisLicenciatura}) tanto el texto total en \LaTeX~de éste trabajo como el código fuente del programa.
+En repositorios separados, también he creado una plantilla para hacer tesis de la UNAM y una plantilla para hacer aplicaciones gráficas con OpenGL.
+Este trabajo es un ejemplo del uso de ambas.
+
+Modelado Gráfico de un Cuerpo Neumático con OpenGL a Base de Ecuaciones Diferenciales \textcopyright{} 2008 por Jorge Antonio García Galicia está licenciado bajo Attribution 4.0 International.
+
+Para ver una copia de esta licencia, visite \href{http://creativecommons.org/licenses/by/4.0/}{creativecommons.org/licenses/by/4.0/}

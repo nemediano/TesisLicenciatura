@@ -1,0 +1,56 @@
+\chapter*{Conclusiones}
+\addcontentsline{toc}{chapter}{\numberline{}Conclusiones}
+\markboth{CONCLUSIONES}{CONCLUSIONES}
+
+Después de haber hecho pruebas y evaluado los resultados obtenidos presentó las siguientes conclusiones.
+
+La más importante: las ecuaciones diferenciales, permiten modelar gráficamente el comportamiento físico de un cuerpo neumático que interactúa con un cuerpo rígido en tiempo real.
+También hay que recalcar que este modelo tiene sustento en la física.
+Es decir es un modelo basado en física y no en geometría.
+
+Creo también que la técnica aquí usada; la de utilizar un gas ideal dentro del cuerpo flexible, es muy buena para enfrentar este tipo de problemas.
+La técnica nos proporciona todo lo que desearíamos para hacer una animación: es computacionalmente barata; al menos lo suficiente para alcanzar tiempo real, y es físicamente adecuada para modelar el gas.
+
+La implementación como se describe, depende poco del poder gráfico.
+El render sigue siendo una operación relativamente barata \emph{en comparación} con los cálculos numéricos.
+Dentro de los cálculos numéricos, lo que más contribuye es el método numérico de Runge Kutta seguido de la acumulación de la fuerza del gas.
+
+Si bien el utilizar el método de Euler hace considerablemente más rápido de ejecutar el programa, recomiendo usar el método de Runge Kutta.
+Esto ofrece una mayor estabilidad ante la variación de las constantes, lo que se traduce en la posibilidad de una mejor interacción.
+También creo que este método no es tan complejo de implementar.
+
+El \emph{\textenglish{damping}} es un parámetro que debe de estar presente.
+Sin embargo, requiere tener mucho cuidado al determinar un valor adecuado.
+Considero que el valor más adecuado es el más grande posible sin que la animación explote.
+Este modelo es muy sensible a las variaciones (incluso \emph{pequeñas}) de éste parámetro.
+
+Se recomienda ampliamente que al momento de programar se tome tiempo para hacer una adecuada elección de las estructuras de datos.
+Guardar todo en una estructura de datos lineal simplifica bastante la programación.
+De igual manera, recomiendo tener diferentes maneras de acceder a las propiedades de las partículas, ya sea por los resortes o por medio de las caras.
+
+El modelo del gas ideal es un modelo muy recomendado para simular cuerpos flexibles.
+Con una adecuada elección de los parámetros se puede tener un comportamiento bastante realista.
+Por lo que considero que el objetivo fundamental de este trabajo se cumple.
+
+Hay muchas mejoras posibles para esta implementación, pienso que hay campo para futuras investigaciones en los siguientes detalles:
+
+\begin{itemize}
+ \item Investigar sobre un método numérico más eficiente, aquel que dé más rapidez sin perder estabilidad.
+ \item El manejo de colisiones más eficiente.
+\end{itemize}
+
+Para el método numérico se hicieron pruebas con el integrador de Verlet.
+Sin embargo, abandoné ese camino porque en un esquema como ése no se toma en cuenta la velocidad de la partícula.
+Por lo que no encontré manera de responder a las colisiones.
+Creo que investigar la manera de incluir una fuerza de impulso como respuesta a la colisión y utilizar el integrador de Verlet daría resultado.
+
+Hay también que considerar una respuesta a las colisiones que conlleven una pérdida de energía al momento de la colisión.
+Es decir, eliminar el supuesto de colisiones perfectamente elásticas.
+Aunque escribí en el segundo capítulo sobre ellas, no fueron implementadas en el programa.
+
+Mi forma de manejar tanto la detección como la respuesta de las colisiones  no es la más eficiente, pues pruebo una a una las partículas del cuerpo flexible.
+Alguna estructura de datos geométrica (como un \emph{\textenglish{octree}} o un \emph{\textenglish{range tree})} que probara sólo las partículas cercanas haría mejor la detección.
+
+También hay que considerar que el cuerpo flexible puede colisionar consigo mismo.
+Es decir, hace falta probar colisiones de las caras del cuerpo con cada una de las partículas y luego responderlas.
+Considero que en cualquier configuración del cuerpo flexible que no sea un volumen convexo éste problema estará presente.

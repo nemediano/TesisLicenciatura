@@ -1,0 +1,15 @@
+\chapter*{Resumen}
+Este trabajo trata de cómo crear una simulación gráfica de un cuerpo flexible.
+El cuerpo flexible, está construido --como es costumbre en graficación por computadora-- por una malla tridimensional. Además, en éste trabajo se asume que las aristas de la malla son resortes y que el cuerpo flexible está relleno de aire.
+
+Para hacer una animación basada en Física, se definen un conjunto de fuerzas que actúan sobre los vértices de la malla. Después, se usa la fuerza acumulada para integrar la ecuación de Newton y obtener las velocidades y posiciones de los vértices en la escena.
+
+Las fuerzas aplicadas son: la gravedad, los resortes-amortiguadores y la fuerza de presión. Esta última, es resultado de usar la ecuación del gas ideal.
+
+Se describe a detalle, la creación de un programa que implementa todas estas ideas para hacer una animación interactiva. La implementación se hizo en lenguaje C++ y se usa OpenGL como biblioteca para desplegar gráficos.
+
+Se hacen un conjunto de pruebas para comprobar el correcto comportamiento cualitativo en la implementación. Y por último, se hace un análisis del desempeño del programa; donde se estima que secciones son las computacionalmente más costosas.
+
+Modelado Gráfico de un Cuerpo Neumático con OpenGL a Base de Ecuaciones Diferenciales \textcopyright{} 2008 por Jorge Antonio García Galicia está licenciado bajo Attribution 4.0 International.
+
+Para ver una copia de esta licencia, visite \href{http://creativecommons.org/licenses/by/4.0/}{creativecommons.org/licenses/by/4.0/}

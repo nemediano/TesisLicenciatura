@@ -1,0 +1,6 @@
+Crop command from image magick
+mogrify -crop 746x912+586+0 *.png
+mogrify -crop 984x1040+471+9 *.png
+mogrify -crop 968x1010+477+9 *.png
+mogrify -crop 943x760+488+290 *.png
+mogrify -crop 992x761+465+282 *.png

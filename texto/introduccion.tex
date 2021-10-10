@@ -1,0 +1,63 @@
+\chapter*{Introducción}
+\addcontentsline{toc}{chapter}{Introducción}
+\markboth{INTRODUCCIÓN}{INTRODUCCIÓN}
+
+Uno de los retos más constantes en las ciencias de la computación, y en especial del área de graficación por computadora, ha sido el de alcanzar cada vez mayor realismo.
+Sin embargo, este objetivo comúnmente se opone al de hacer modelos simples que requieran de poco poder de cómputo.
+
+Es cierto que cada vez tenemos computadoras más poderosas, pero como seres humanos que somos siempre hemos querido muchas cosas más de las que tenemos.
+Hoy en día el que una simulación se pueda ejecutar rápidamente en una computadora personal es casi tan importante como el que esa simulación se vea real.
+
+Modelos que se sabe son bastante efectivos, como las ecuaciones de Navier-Stokes, también son computacionalmente muy costosos.
+Por lo tanto, no pueden ser ocupados en simulaciones que requieren de alcanzar tiempo real.
+
+Los videojuegos son un claro ejemplo de simulaciones que requieren de una adecuada combinación de realismo y rapidez de ejecución.
+Dentro de esta área, se dice que se alcanza tiempo real cuando el programa responde más rápido de lo que el usuario puede darle instrucciones.
+El objetivo principal de este trabajo es encontrar un modelo que conjunte el mayor realismo posible, sin olvidar alcanzar \emph{tiempo real}.
+
+Hace tiempo, cuando buscaba algún tema interesante para realizar mi trabajo de titulación, no tenía una idea clara de lo que quería hacer.
+Por un lado sabía qué me gustaba de las materias de mi licenciatura, también sabía que quería hacer una tesis que de alguna manera tuviera que ver con el área de gráficas por computadora.
+
+Afortunadamente para mi, eso fue lo único que necesité para que la maestra Carmen Villar se interesara en asesorar mi trabajo de titulación, aun cuando no tenía un tema bien definido.
+Después de buscar en diversas fuentes de información llegamos al sitio web de Maciej Matyka, sobre simulación basada en física, en donde pude consultar el artículo~\cite{Matyka:Presion}.
+Desde el primer momento este artículo llamó  mi atención, el modelo propuesto gozaba de las tres características más deseables en un modelo de simulación: era sencillo de entender, sencillo de implementar y era visualmente muy agradable.
+
+Teníamos entonces una idea de donde comenzar, sólo nos hacía falta un problema que valiera la pena modelar.
+Discutiendo en el laboratorio de Linux de la FES Acatlán, quizás un poco inspirados en la película \say{American Beauty}, tuvimos la idea del sistema que dio origen al presente trabajo.
+Al final creo que el resultado poco tiene que ver con la inmortal escena, pero estoy convencido de que al menos para mí ha sido un camino igual de inspirador.
+
+Otra meta que quería alcanzar era utilizar Software Libre en todo este trabajo. 
+Sin duda, el utilizar una biblioteca como OpenGL me favoreció para poder alcanzar esta meta, al tratarse de una especificación libre y multiplataforma.
+La mayor parte del trabajo fue realizada bajo un sistema GNU/Linux y el texto fue escrito en \LaTeX. Considero que este objetivo fue cumplido.
+
+A lo largo del desarrollo, tanto del programa como del trabajo escrito, me encontré con muchísimos obstáculos.
+Algunos se debieron a mi desconocimiento de ciertas áreas de la física, y otros simplemente a mi falta de habilidades de programación.
+Sin embargo, estoy convencido que en ambos aspectos este trabajo me ayudó a superarme.
+
+La pregunta más importante que ahora trato de responderme es: ¿a quién le sirve este trabajo?
+Indudablemente me sirvió a mí el escribirlo, y quiero pensar que también le servirá a cualquier persona que lo lea.
+¿Quién puede ser éste lector potencial?
+Es un trabajo de animación por computadora, por lo que le debe servir a cualquier persona que desee hacer una animación de cuerpos flexibles.
+También creo que es un trabajo que modela adecuadamente las leyes físicas del fenómeno, así que se puede beneficiar de él cualquier persona que desee aprender o enseñar cómo funcionan los cuerpos neumáticos.
+Por último, le sirve a cualquier estudiante que busque alguna aplicación de las matemáticas y la física en la animación.
+
+La manera como decidí organizar este trabajo es la siguiente:
+
+En la primera parte se revisó el marco teórico.
+Éste trata principalmente de aquellas partes de la literatura, que aunque ya están escritas, quizás no sean tan obvias para estudiantes de la licenciatura de Matemáticas Aplicadas y Computación.
+Este capítulo fue por mucho el más divertido de escribir.
+
+En el siguiente capítulo, ya adentrado en la situación a modelar, traté en mayor detalle las estrategias de implementación del modelo.
+Es un capítulo en el que intenté plasmar, sobre todo, las cosas que me fueron más difíciles en el desarrollo de la investigación y cómo fue que encontré soluciones a ellas.
+
+El tercer capítulo trata de cómo se hizo el programa en C++ para esta simulación. 
+Aunque el código que aquí escribo puede ser mejorado de muchas maneras, es una solución que funciona.
+Y si bien no me preocupé en optimizar el código, si se ganó un poco de claridad. 
+Además, considero dado el  propósito de este trabajo, que la programación no es \emph{tan} importante.
+
+En el capítulo final, presento las pruebas y juegos a los que sometí mi programa una vez que terminé el desarrollo.
+Este capítulo fue por mucho el más gratificante de escribir.
+Al escribir este capítulo aprendí dos cosas: que siempre hay más cosas que hacer después de que uno piensa que ha terminado algo y que los resultados no siempre son los que uno espera.
+De hecho, el desarrollo de esta investigación, de la que fui parte desde su nacimiento, me hizo llevarme unas cuantas sorpresas en su edad madura.
+
+Por último, sólo me queda esperar que los lectores de este trabajo encuentren al leerlo, un poco de la diversión que me dejó a mí escribirlo.

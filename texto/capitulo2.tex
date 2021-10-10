@@ -1,0 +1,799 @@
+\chapter{Construcción del algoritmo de simulación}
+
+En este capítulo nos encargaremos de presentar el algoritmo propuesto por Matyka en~\cite{Matyka:Presion}, que es explicado en más detalle en~\cite{Matika:SoftBody}.
+Este modelo no es más que la unión de los modelos del capítulo anterior.
+Además definiremos el experimento que deseamos realizar para probar el funcionamiento del modelo.
+
+Más adelante en este mismo capítulo, explicaremos cómo se pueden enfrentar ciertos detalles sobre el algoritmo de Matika.
+
+Primero veremos cómo se puede calcular el volumen de un cuerpo en tres dimensiones, explicaremos cómo se puede tener una idea general, y por qué para ciertas geometrías del cuerpo, se prestan mejor ciertos algoritmos.
+
+Luego nos enfrentaremos al problema de cómo integrar la ecuación de Newton, con métodos numéricos, analizando dos alternativas, y se presentan las que se consideran las mejores maneras de implementar el integrador en código.
+
+Por último analizaremos el problema más difícil de la implementación: las colisiones.
+Esto se analiza en dos partes, la manera como se detectan y la respuesta de las mismas.
+
+\section{Diseño del experimento}
+\label{descripcion:experimento}
+Necesitamos una simulación gráfica (animación) y el principal objetivo será hacer que se \emph{vea} real.
+
+Se quiere modelar un cuerpo neumático.
+Para hacerlo partimos de un cuerpo flexible y le ponemos un fluido dentro, en este caso el gas, además queremos una manera de probar cómo es la interacción de éste con otros objetos de la escena. 
+
+Con base en esos requerimientos, diseñe la siguiente situación: se modela una caja cerrada, en la cual su cara superior tiene la característica de ser formada como un cuerpo flexible, las otras cinco caras son rígidas.
+Dentro de esta caja se pone el fluido (gas), de manera que ahora tenemos un cuerpo neumático.
+Para probar su interacción con otro cuerpo se le deja caer sobre su cara flexible un cuerpo sólido (en este caso una esfera) y se observa el resultado.
+
+Además para poder hacer varios tipos de pruebas se desea que la animación tenga cierta interactividad, es decir que el usuario pueda, en tiempo de ejecución, cambiar algunas opciones tanto de visualización como también algunos parámetros físicos.
+
+Esta simulación es el objetivo principal del trabajo, y el siguiente capítulo está dedicado a cómo se construyó, mientras que en este capítulo se hace énfasis en los detalles teóricos necesarios para escribir el programa.
+
+\section{Simulaciones gráficas basadas en física}
+
+Lo primero que debemos de hacer es exponer las condiciones de nuestra simulación de cuerpo flexible. La situación física que deseamos modelar es la de un cuerpo flexible, hueco que contiene un gas.
+Por ejemplo, imagínese un globo, un colchón de aire, la llanta de un automóvil o una burbuja.
+El comportamiento en el que estamos interesados es en un comportamiento cualitativamente parecido al del fenómeno, es decir que al momento de graficarlo y hacer una animación debe verse \emph{parecido} al sistema real.
+
+El valor de poder graficar de manera realista un modelo como éste, radica en el hecho de que hay muchas cosas que se comportan de manera parecida, y al momento de animar una escena donde hay varios de estos objetos, un modelo físicamente más realista sería muy costoso en tiempo de ejecución.
+
+La forma de atacar este problema será hacerlo con un modelo simple.
+Imagínese un cuerpo formado por varios puntos unidos entre ellos por resortes.~\footnote{Este modelo es muy socorrido cuando se trata de modelar ropa o tela, se pueden ver ejemplos en el último capítulo de~\cite{FisicaVideojuegos}, que modela una bandera o en~\cite{Vassilev:Ropa} y~\cite{Provot:Ropa}, ambos modelan ropa sobre una persona}
+Ahora imagínese que a un cuerpo cerrado formado por esta \emph{tela}, le ponemos dentro una fuente de aire, que le ayuda a mantener su forma más o menos constante durante las deformaciones permitidas por los resortes que lo forman; ésa es la idea principal de nuestro modelo.
+
+En la Figura~\ref{modelo:fig} podemos ver un pequeño esquema del modelo, en este caso es un hexágono en dos dimensiones.
+Desde luego, mientras más compleja sea la forma de nuestro modelo, mas difícil será trabajar con él, pero se verá más realista 
+
+\begin{figure}
+ \centering
+ \includegraphics[]{img/02/modelo}
+ \caption[Diagrama del modelo masa, resorte, y presión]{ 
+ Un ejemplo de un modelo de masa resorte, con presión. Se trata de un hexágono cerrado, y $\textbf{F}_p$ representa la fuerza debida a la presión.
+ } \label{modelo:fig}
+\end{figure}
+
+\subsection{Esbozo general del algoritmo}
+Una vez conocida la idea, nos empezaremos a preguntar en cómo llevarlo a cabo, es decir cómo podemos implementar este modelo en forma de un algoritmo que seamos capaces de codificar en algún lenguaje de programación.
+
+
+\begin{figure}
+ \centering
+ \includegraphics[width=10cm]{img/02/diagrama_flujo}
+ \caption[Diagrama de flujo de la simulación]{ 
+ Este diagrama de flujo muestra, los detalles generales a seguir en una simulación gráfica basada en física. Para cada paso del algoritmo se pueden tener diferentes estrategias, pero en general este esquema no debe cambiar.
+ } \label{diagrama_flujo:fig}
+\end{figure}
+
+El diagrama de flujo del algoritmo es el que se muestra en al Figura~\ref{diagrama_flujo:fig}, en donde se puede apreciar que sólo se tienen bloques de proceso; cada uno de estos procesos puede ser llevado a cabo de muchas maneras, pero tendrá que ser en este orden, en esta sección veremos con un poco más de detalle cada proceso.
+
+\subsubsection{Inicializar variables}
+Lo primero es dar valor a las variables que lo necesiten, me refiero con esto a variables globales, que afectan cómo funciona el programa por el resto de su ejecución.
+Dentro de estas variables están los parámetros externos del modelo, es decir esos que no pueden ser calculados dentro del programa y que es necesario que se proporcionen por el usuario.
+Los parámetros necesarios son $m$ para cada partícula, $g$, $k_d$ y $k_s$ para los resortes, $L$ para cada resorte en particular, y $k_g$ para la acumulación de la fuerza debida a la presión.
+
+Otra cosa que debe hacerse en este paso del algoritmo es poner las condiciones iniciales del modelo, por ejemplo, la posición de cada partícula y la velocidad al momento de iniciar la animación.
+Y de igual manera con los cuerpos no flexibles que deseemos que interactúen con nuestro modelo, se debe de conocer su posición, si se mueven o no, y cómo van a interactuar con el modelo.
+
+Por último las opciones globales, que afecten a la animación también se deben de obtener aquí, por ejemplo el tamaño del paso $\Delta t$ para mover el modelo, las opciones de los gráficos (si se hará \emph{\textenglish{render}}, o se tratará sólo con el \emph{\textenglish{wireframe}}~\footnote{Cuando sólo se dibujan los bordes de las figuras, como si éstas estuvieran hechas de una malla de alambre se le llama wireframe, cuando dibujamos el área de las figuras y les damos color y efectos de iluminación se dice que se les dio \emph{render}.}) y qué tipo de integrador se ocupará en el modelo.
+Alguien me podría decir que estos también son parámetros.
+Y en efecto lo son, quise sin embargo hacer la distinción y llamarlos variables globales, por el hecho de que no se deben al modelo en sí, sino más bien a la implementación que cada quien haga del mismo, es decir se deben al programa.
+
+\subsubsection{Dibujar escena}
+Esta parte del algoritmo debe ser la encargada de dibujar en la pantalla toda la escena.
+Para hacer esto debe contar con la información de donde se encuentran cada punto y donde se encuentra cada cosa que queramos dibujar.
+
+Aunque no hay mucho que decir aquí, ésta parte es delicada, depende de nuestro conocimiento de las herramientas que vamos a usar para hacer el programa.
+Con la ayuda de una biblioteca gráfica, en este caso \emph{\textenglish{OpenGL}}, y los datos necesarios guardados de una manera ordenada, como en una estructura de datos, debemos de ser capaces de implementar esta función.
+
+El detalle de la implementación depende del modelo en cuestión, veré a detalle la que yo use.
+Esto puede ser útil para que alguien que deseé implementar una simulación, se de algunas ideas, pero como ya dije, esta parte depende del fenómeno a modelar, por lo que en cada implementación se debe de hacer un análisis.
+
+\subsubsection{Acumular fuerzas}
+Las fuerzas que actúan sobre cada partícula del modelo, se pueden identificar como \emph{externas}, es decir que se deben al medio, o \emph{internas} que se deben al cuerpo en sí.
+Ejemplos de fuerzas externas son la gravedad, la viscosidad del medio, la resistencia del aire, por mencionar algunas.
+Ejemplos de las fuerzas internas son por otra parte: los \emph{resortes amortiguadores} y la debida a la presión del gas.
+
+Cualquiera que sea el caso, en este paso debemos de calcular todas las fuerzas que intervienen en nuestro modelo, y debemos de acumulársela a cada uno de las partículas que lo conforman, es decir, cada partícula debe tener asociada la suma de todas las fuerzas que actúan sobre ella.
+Recordemos que la fuerza en general es un vector, por lo que la acumulación de la que hablo es una suma vectorial de cada una de las fuerzas.
+
+Los detalles de cómo acomular las fuerzas específicas que ocuparé en la simulación se darán en la siguiente sección y con más a detalle en el resto del capítulo.
+
+\subsubsection{Integrar la ecuación de Newton}
+Las fuerzas acomuladas en el paso anterior, junto con la posición y velocidad actuales de la partícula, nos proporcionan (como dice la segunda ley de Newton~\eqref{ley:Newton}) el siguiente estado, nos dan la información suficiente para saber la nueva posición y la nueva velocidad de la partícula en cuestión. 
+Conociendo esto para todas las partículas tendremos determinado el estado completo del modelo en el tiempo siguiente.
+
+Como ésta es una ecuación diferencial, debemos de resolverla, o mejor dicho integrarla, para conocer el siguiente estado del sistema, sin embargo como nuestra acumulación de fuerzas fue hecha a partir de muchas fuerzas, todas ellas de naturaleza distinta, no podremos integrar esta ecuación de manera analítica.
+Por esta razón debemos de recurrir a un método numérico que nos permita aproximar la solución.
+
+Por suerte hay muchísimos métodos numéricos que se ajustan a nuestras necesidades, aquí he decidido presentar a dos de ellos solamente, en la sección dedicada a integrar la ecuación de Newton explicaré a detalle cómo funcionan.
+De manera general, se puede decir que todos ellos toman como información la posición y velocidad actual de la partícula, el vector fuerza que actúa sobre ella y el instante de tiempo que pasa entre el estado actual y el nuevo estado que queremos calcular (ésta cantidad es $\Delta t$).
+Y después de hacer cálculos con ellos nos devuelven un nuevo estado, en forma de la nueva posición y la nueva velocidad de la partícula.
+
+\subsubsection{Detectar y resolver colisiones}
+En este paso debemos analizar qué pasa cuando nuestro modelo choca o interactúa con otros objetos de la escena.
+Estos otros objetos pueden ser cuerpos rígidos como el piso o flexibles como otro cuerpo de la misma característica del nuestro.
+
+El segundo paso es la respuesta a esta colisión.
+Este problema es también delicado, pero en general, se va a encargar de ver la partícula que chocó, moverla como respuesta al choque y modificar su estado, es decir su posición y su velocidad.
+En una sección posterior de este capítulo hablaré con más detalle y también daré algunas ideas generales.
+
+\subsubsection{Interacción del usuario}
+Este paso es opcional, y depende de si deseamos que la simulación tenga una forma de ejecutarse independiente del usuario o si se desea que éste pueda cambiar la simulación en tiempo de ejecución, por ejemplo modificando algún parámetro de la simulación.
+
+Para enfrentar esto se tiene que recurrir totalmente a la creatividad del programador que vaya a hacer la implementación.
+Una buena idea es por ejemplo utilizar alguna biblioteca que exista precisamente para este fin. En éste caso se decidió utilizar un par de bibliotecas que se integran bien con \emph{\textenglish{OpenGL}}.
+Por un lado \emph{\textenglish{glfw}}, que permite manejar eventos del ratón y del teclado. 
+Y por otro lado \emph{\textenglish{Dear Imgui}} que permite implementar una interfaz gráfica (menú) de usuario.
+
+\section{El sistema de fuerzas}
+Es momento de hacernos unas preguntas:
+¿Qué es lo que compone nuestro cuerpo?
+¿Qué necesitamos saber para implementar este modelo?
+La primera pregunta es sencilla: nuestro cuerpo está formado por puntos, que están unidos por resortes, que a su vez se unen para formar las caras.
+Resumiendo, nuestro cuerpo es un conjunto de caras, que a su vez son un conjunto de resortes, que a su vez son un conjunto de puntos:
+¡Nuestro cuerpo está formado por puntos (partículas)!
+La respuesta de la segunda interrogante está ligada a la primera, necesitamos saber todo lo que sea necesario para poder acumular fuerza a las partículas, es decir que para cada una debemos de poder ocupar las ecuaciones~\eqref{fuerzaGravedad}, ~\eqref{fuerzaResorte} y \eqref{fuerzaGas}.
+
+Ciertamente cada una de estas fuerzas es de naturaleza distinta, la fuerza de gravedad es externa y se puede calcular para cada partícula por separado, la de los resortes depende de la posición de cada partícula y de sus vecinos a los cuales está conectado por un \emph{resorte-amortiguador} y por último la de la presión depende de la cara en la que esté la partícula y del volumen total del cuerpo.
+Podemos resumirlo en el Cuadro~\ref{ejemplo:fuerzas}.
+
+\begin{table}
+\ra{1.2}
+\begin{center}
+\begin{tabular} {@{}llll@{}} 
+\toprule
+Fuerza & Símbolo &  Parámetros & Datos necesarios \\ 
+\midrule
+Gravedad & $ \textbf{F}_g $ & $g$, $m$ & Ninguno \\
+Resorte & $ \textbf{F}_s + \textbf{F}_d $ & $k_s$, $k_d$ & Partículas unidas por el resorte \\
+& & & Velocidad y posición de cada partícula que une el resorte \\
+Presión & $ \textbf{F}_p $ & $k_g$ & Partículas que forman la cara \\ 
+& & & Volumen total del cuerpo \\ 
+& & & Area de la cara \\ 
+\bottomrule
+\end{tabular}
+\end{center}
+\caption[Resumen de las fuerzas que actúan sobre cada partícula]{Fuerzas a calcular para cada partícula y que se necesita saber para hacer los cálculos}
+\label{ejemplo:fuerzas}
+\end{table}
+
+Para calcular la fuerza de gravedad es necesario que se conozcan dos parámetros, la masa de cada partícula $m$, y la constante gravitación $g$.
+La gravedad debe de acumularse en cada partícula.
+
+La fuerza del \emph{resorte amortiguador} es una fuerza interna.
+Para calcularla  necesitamos recibir dos parámetros: $k_s$ y $k_d$.
+Luego necesitamos calcular la posición y la velocidad de cada partícula, y saber por cada resorte qué partículas está uniendo.
+Cuando tengamos que acumular esta fuerza recorreremos todos los resortes y por cada resorte calcularemos una fuerza, luego la acomularemos en cada unos de las dos partículas a los que este resorte esté conectado.
+
+Por último, para la fuerza debida a la presión, necesitamos un parámetro externo: $k_g$.
+Y para poder calcular esta fuerza debemos conocer antes de empezar el volumen total del cuerpo $V$, luego debemos de saber qué partículas pertenecen a cada una de las caras del cuerpo.
+Para acumular esta fuerza debemos recorrer cada una de las caras que forman el cuerpo, en cada caso calculamos el área de la cara y acumulamos la fuerza $\textbf{F}_p$ que le corresponda en cada una de las partículas que la forman.
+
+\section{Área, volumen y vectores normales}
+Los parámetros necesarios para calcular la fuerza de presión son el volumen total del cuerpo, el área de cada una de las caras, y un vector normal a dicha cara; como ya se dijo, esto depende enteramente de la geometría del cuerpo que se quiera modelar.
+Sin embargo, esto no quiere decir que no se puedan dar algunas técnicas generales que en alguna medida puedan ser adaptadas a alguna geometría particular.
+El propósito de esta sección es precisamente el de explicar esas técnicas generales.
+
+\subsection{Cálculo de áreas}
+Para calcular el área de un cuerpo geométrico generalmente se calcula el área de cada una de sus caras y después se suman.
+Empezando por el caso más simple, supongamos que tenemos un triángulo formado por tres puntos, sabemos las coordenadas de cada uno de los puntos, y queremos su área.
+Supongamos que los puntos son denotados por $\textbf{P}$, $\textbf{Q}$ y $\textbf{R}$.
+Podemos calcular dos de las aristas del triángulo si calculamos los vectores que van de $\textbf{P}$ a $\textbf{Q}$ y de $\textbf{P}$ a $\textbf{R}$.
+Luego podríamos calcular el producto cruz de los dos vectores que acabamos de encontrar y obtener su norma, finalmente la mitad de la norma sería el área del triángulo que estamos buscando.
+
+$$\overrightarrow{\textbf{PQ}} = \textbf{Q} - \textbf{P}$$
+$$\overrightarrow{\textbf{PR}} = \textbf{R} - \textbf{P}$$
+$$ A = \frac{1}{2} \vert \overrightarrow{\textbf{PQ}} \times \overrightarrow{\textbf{PR}} \vert$$
+
+Si queremos calcular el área de un cuadrilátero podemos usar la idea anterior y \emph{triangular}, el cuadrilátero en dos partes, supongamos que queremos calcular el área del cuadrilátero formado por los puntos $\textbf{P}$, $\textbf{Q}$, $\textbf{R}$ y $\textbf{S}$, podríamos calcular el área del triángulo $\triangle \textbf{PQR}$ y luego sumar el área del triángulo $\triangle \textbf{SRQ}$.
+Dicho de otra manera:
+
+\begin{eqnarray} 
+A_{T} & = & A_{\triangle \textbf{PQR}} + A_{\triangle \textbf{SRQ}} \nonumber \\
+A_{T} & = & \frac{1}{2} \vert \overrightarrow{\textbf{PQ}} \times \overrightarrow{\textbf{PR}} \vert \times \frac{1}{2} \vert \overrightarrow{\textbf{SQ}} \times \overrightarrow{\textbf{SR}} \vert \nonumber \\
+\label{formulaArea}
+A_{T} & = & \frac{1}{2} \left( \vert \overrightarrow{\textbf{PQ}} \times \overrightarrow{\textbf{PR}} \vert + \vert \overrightarrow{\textbf{SQ}} \times \overrightarrow{\textbf{SR}} \vert \right)
+\end{eqnarray}
+
+Este resultado de hecho, puede ampliarse aún más con el enunciado siguiente:
+
+Sea $P$ un polígono simple, sin agujeros, dado por la secuencia ordenada de vértices $\textbf{P}_i = (x_i, y_i)$, $i = 1,\ldots,n$, (por ejemplo en el sentido contrario a las agujas del reloj), entonces el área de $P$ es:
+$$A(P) = \frac{1}{2}\sum^{n-1}_{i = 1} \det (\textbf{P}_i, \textbf{P}_{i + 1}) + \frac{1}{2} \det (\textbf{P}_n, \textbf{P}_1)$$
+
+Este teorema fue tomado de \cite{GeometriaParaCAD} donde también es demostrado. 
+Con la adecuada combinación de estas técnicas es sencillo ingeniárselas para poder calcular el área de una cara.
+
+\subsection{Cálculo de volúmenes}
+Calcular volúmenes es usualmente más complejo que calcular áreas, y por ende casi siempre es computacionalmente costoso, de ahí que además de maneras geométricas de calcular un volumen siempre está la alternativa de aproximar un volumen.
+De nuevo hay que pensar qué queremos lograr con la simulación si rapidez en la ejecución, o apego a la realidad física.
+
+No hay que olvidar también que para todo modelo y sus respectivos parámetros, siempre hay diferentes grados de sensibilidad, por ejemplo en el caso de nuestro modelo el volumen sólo es utilizado para poder determinar la fuerza escalar de la presión, por lo que es un modelo \emph{poco sensible} al cálculo del volumen.
+Es decir, es válido aproximarse en este rubro en este rubro, sin perder mucha realidad en el modelo.
+
+\subsubsection{Volúmenes aproximados}
+Hay varias formas de aproximar el volumen de un cuerpo, una de ellas es con cajas envolventes o \emph{\textenglish{bounding boxes}}, la idea es muy simple se trata de aproximar el volumen de un cuerpo complejo mediante el volumen de un cuerpo simple que lo contenga.
+Es decir, se aproxima el volumen por medio de poliedros regulares ya sean inscritos o circunscritos, tales que den una buena aproximación del cuerpo cuyo volúmen estamos calculando.
+
+Una forma más simple es aproximando con un \emph{hexaedro regular} cuyo volumen es $ l \cdot w \cdot h $, o largo por alto por ancho; otra forma geométrica que se usa de manera muy común es el \emph{elipsoide}, cuyo volumen es $ \frac{4\pi}{3} a \cdot   b \cdot  c $, donde $a$, $b$ y $c$, son los largos de sus ejes principales.
+
+\subsubsection{Volúmenes Exactos}
+Una técnica muy útil para calcular el volúmen de una malla triangular se puede ver en~\cite{Zhang:volumen}.
+
+La técnica consiste recorrer todas la caras, y en cada una calcular el \emph{volumen orientado} del tetraedro cuya base es la cara triangular y cuya punta es el origen del sistema de referencia.
+El signo del volumen (por eso dijimos que es un volumen orientado) depende de si el tetraedro apunta hacia el origen.
+Eso quiere decir que habrá algunos volúmenes que sean negativos y otros positivos, la suma de todos los volúmenes es el volumen de la malla.
+
+Es importante que al usar esta fórmula, los triángulos apunten hacia el mismo lado de la malla.
+En otras palabras, se deben de definir un orden para los vértices de los triángulos (por ejemplo en contra de las manecillas del reloj) y se debe ser consistente en toda la malla.
+En efecto, esta técnica usa una normal a la cara del triángulo para orientar, pero dicha normal está implícita por el orden de los vértices.
+
+En resumen el volumen del la malla formada por $n$ caras triangulares está dado por:
+
+\begin{equation}
+V = \frac{1}{6} \sum_{i=1}^{n} \textbf{g}_i \cdot \textbf{N}_i
+\label{eq:volumen}
+\end{equation}
+
+En donde $\textbf{g}_i$ y $\textbf{N}_i$ son el baricentro y la normal del triángulo $i$. Y asumiendo que dicho triángulo tiene vértices en el orden $\textbf{v}_{i}^{1}$, $\textbf{v}_{i}^{2}$ y $\textbf{v}_{i}^{3}$ se pueden calcular de la siguiente manera:
+
+\begin{equation}
+\textbf{g}_{i} = \frac{(\textbf{v}_{i}^{1} + \textbf{v}_{i}^{2} + \textbf{v}_{i}^{3})}{3}
+\label{eq:baricentro}
+\end{equation}
+
+\begin{equation}
+\textbf{N}_i = (\textbf{v}_{i}^{2} - \textbf{v}_{i}^{1}) \times (\textbf{v}_{i}^{3} - \textbf{v}_{i}^{1})
+\label{eq:normTriag}
+\end{equation}
+
+Como ya se dijo, se puede transformar cualquier malla poligonal en una malla triangular subdividiendo cada cara en triángulos.
+Por ejemplo, nuestro cuerpo neumático está formado por caras en forma de cuadriláteros.
+Cada cara se puede partir por su diagonal para formar dos triángulos.
+
+\subsection{Vectores normales}
+Dado un plano podemos encontrar un vector que le sea normal, sólo necesitamos dos vectores linealmente independientes que se encuentren en el plano y calculando su producto cruz obtenemos un vector normal, es decir en términos más simples, si conocemos tres puntos del plano y no son colineales, podemos calcular el vector perpendicular a ese plano.
+
+Matemáticamente: dado el triángulo formado por los puntos $\textbf{A}_1 = (x_1, y_1, z_1)$, $\textbf{A}_2 = (x_2, y_2, z_2)$ y $\textbf{A}_3 = (x_3, y_3, z_3)$, un vector normal a este plano, es el vector $\textbf{n}$ que se calcula:
+
+$$ \textbf{n} = \overrightarrow{\textbf{A}_1 \textbf{A}_2} \times \overrightarrow{\textbf{A}_1 \textbf{A}_3}$$
+
+Un hecho muy importante es que si queremos calcular el vector normal a una superficie, podemos calcular los vectores normales a cada vértice de ella y luego promediarlos.
+Esto por increíble que parezca funciona y es de hecho la manera como se hacen los cálculos de iluminación en la mayoría de los programas de CAD y de simulación gráfica.
+
+Es decir, si tenemos el polígono de $n$ lados, formado por los puntos $\textbf{P}_1, \textbf{P}_2, \ldots, \textbf{P}_n$, ordenados de alguna manera, por ejemplo en sentido contrario a las manecillas del reloj, y queremos el vector normal a este polígono $\textbf{n}$, calculamos los vectores $ \textbf{v}_1, \textbf{v}_2, \ldots , \textbf{v}_n $, de la forma $\textbf{v}_i = \overrightarrow{\textbf{P}_i \textbf{P}_{i + 1}} \times \overrightarrow{\textbf{P}_i \textbf{P}_{i + 1}} $ para $i = 2, \ldots, n$ y $\textbf{v}_1 = \overrightarrow{\textbf{P}_1 \textbf{P}_2} \times \overrightarrow{\textbf{P}_1 \textbf{P}_n}$, y luego el vector normal $\textbf{n}$ es:
+
+\begin{equation}
+\label{formulaVecNormal} 
+\textbf{n} = \frac{1}{n} \sum_{i=1}^{n} \textbf{v}_i
+\end{equation}
+
+Este hecho es fundamental para nuestros cálculos, tanto de la fuerza debida a la presión, como para la iluminación en el render.
+Una demostración se puede encontrar en \cite{GeometriaParaCAD}.
+
+\section{Integrar la ecuación de Newton}
+Desde que hay modelos físicos, ha habido interés en la solución numérica de ciertos problemas para los que se sabía de antemano que una solución existía, pero no se contaban con métodos analíticos para encontrarla.
+Es por esta razón que nace el análisis numérico, sin embargo no fue hasta que se popularizó el uso de las computadoras que este campo tomó más importancia.
+
+Dentro del análisis numérico, es de nuestro interés la solución numérica de ecuaciones diferenciales.
+El problema comienza con una ecuación de primer orden con condición inicial y que cumple las condiciones de existencia y unicidad.
+
+Actualmente, hay muchas maneras de atacar estos problemas, es decir muchas familias de métodos.
+Por familia quiero decir que cuando alguien propone un método y llega otra persona más y le hace correcciones, ahora hay dos métodos pero en esencia funcionan con la misma idea, por eso son dos métodos de la misma familia.
+
+El primer método para obtener una aproximación numérica de la solución de una ecuación diferencial es el método de Euler, y desde entonces se han propuesto muchísimos métodos e ideas más.
+El Cuadro~\ref{historia:metodos} es una línea del tiempo que tiene algunos de los acontecimientos más importantes del desarrollo de esta disciplina.
+
+\begin{table}
+\ra{1.2}
+\begin{center}
+\begin{tabular} {@{}lp{12cm}@{}} 
+\toprule
+Año & Evento \\ 
+\midrule
+1768 & Leonhard Euler publica su método, el primero en la historia \\
+1824 & Agustin Cauchy demuestra la convergencia del método de Euler, emplea el método de Euler implícito \\
+1855 & En una carta escrita por John F. Bashforth, se mencionan por primera vez los métodos de pasos múltiples de Couch Adams \\
+1895 & Carl Runge publica el primer método de Runge Kutta \\ 
+1905 & Martin Kutta describe el popular método de Runge Kutta de orden cuatro \\ 
+1910 & Lewis Fry Richardson anuncia su método de extrapolación. \\
+1952 & Charles F. Curtiss y Joseph Oakland Hirschfelder acuñan el término \emph{\foreignlanguage{english}{stiff equations}}. \\
+1967 & Loup Verlet publica su método, especialmente enfocado a la mecánica de partículas \\ 
+\bottomrule
+\end{tabular}
+\end{center}
+\caption[Evolución histórica de los métodos numéricos]{Una línea de tiempo que muestra algunos de los acontecimientos más importantes para la solución numérica de ecuaciones diferenciales}
+\label{historia:metodos}
+\end{table}
+
+En esencia estos métodos se encargan de resolver la ecuación diferencial de la forma:
+\begin{eqnarray}
+ \frac{d\textbf{y}}{dt} & = &\textbf{F}(t,\textbf{y}) \nonumber \\
+ \textbf{y}(t_0) & = & \textbf{y}_0 \label{condicion:inicial}
+\end{eqnarray}
+
+Y para hacerlo toman la condición inicial~\eqref{condicion:inicial}, como el primer valor de la solución, con ella calculan un valor aproximado para la solución $\textbf{y}(t)$ en el tiempo $t = t_0 + \Delta t$.
+Ahora este nuevo punto de la solución lo llamamos $\textbf{y}_{n}$ y nos ayuda a encontrar un nuevo punto dando otro paso hacia adelante en el tiempo $t = t_0 + 2\Delta t$.
+Y así sucesivamente, de manera que la salida de nuestro método son una colección de parejas $(t + n \Delta t, \textbf{y}(t + n \Delta t) )$ la primera de ellas es la condición inicial, y de ahí en adelante se trata de aproximaciones de la solución.
+
+Sin embargo nosotros no queremos resolver una ecuación como ésta, deseamos resolver la ecuación~\eqref{ley:Newton}, que es una ecuación diferencial de segundo orden.
+Para poder adaptar este problema al método se propone un cambio de variable $\frac{d\textbf{x}}{dt} = \textbf{v}(t)$, por lo que el problema se transforma en resolver un sistema de dos ecuaciones diferenciales.
+
+\begin{eqnarray}
+\frac{d\textbf{v}}{dt} & = & \frac{1}{m} \textbf{F}(\textbf{x}, \textbf{v}, t) \nonumber \\
+\frac{d\textbf{x}}{dt} & = & \textbf{v}(t) \nonumber \\
+\textbf{v}(0) & = & \textbf{v}_0 \nonumber \\
+\textbf{x}(0) & = & \textbf{x}_0 \nonumber
+\end{eqnarray}
+
+Los métodos siguientes entonces supondrán que sabemos la velocidad y la posición de la partícula en el tiempo $t$, así como la fuerza que actúa sobre ella en este tiempo, con esta última podremos calcular la posición y la velocidad de la partícula en un tiempo posterior $t + \Delta d$.
+
+\subsection{El método de Euler}
+Este método fue el primero de todos, de ahí que también sea el más simple, sin embargo aún tiene algunas ventajas el usarlo.
+Básicamente el método de Euler nos dice que si tenemos una ecuación de la forma:
+$$\textbf{y}'(t) = \textbf{f}(t, y)$$
+Con una condición inicial de la forma $\textbf{y}(0)=\textbf{y}_0$.
+
+Entonces podemos aproximar el siguiente punto de la solución con la siguiente fórmula de recurrencia:
+
+$$\textbf{y}_{n+1} = \textbf{y}_n + h\textbf{f}(t_n, \textbf{y}_n)$$
+
+En donde $h$ representa el tamaño del paso en el tiempo hacia adelante es decir $h = \Delta t$.
+
+El método de Euler se puede generalizar para sistemas de ecuaciones diferenciales de tamaño $n$.
+Estas generalizaciones se pueden ver en casi cualquier libro de Ecuaciones y en cualquier libro de análisis numérico.
+Aquí sólo daré las fórmulas de recurrencia para el caso de $n=2$ por ser el que estamos interesados en resolver.
+
+Dado el sistema:
+\begin{eqnarray}
+\textbf{x}'(t) & = & \textbf{f}(t, \textbf{x}, \textbf{y}) \nonumber \\
+\textbf{y}'(t) & = & \textbf{g}(t, \textbf{x}, \textbf{y})
+\label{sistema:general}
+\end{eqnarray}
+Con las condiciones iniciales:
+
+\begin{eqnarray}
+\textbf{x}(t_0) & = & \textbf{x}_0 \nonumber \\
+\textbf{y}(t_0) & = & \textbf{y}_0
+\label{condiciones:general}
+\end{eqnarray}
+
+Entonces la solución se puede aproximar con las siguientes fórmulas de recurrencia:
+$$\textbf{x}_{n+1} = \textbf{x}_n + h\textbf{f}(t_n, \textbf{x}_n, \textbf{y}_n)$$
+$$\textbf{y}_{n+1} = \textbf{y}_n + h\textbf{g}(t_n, \textbf{x}_n, \textbf{y}_n)$$
+
+Ahora vamos a poner nuestro sistema de manera que podamos ocupar estas fórmulas para resolverlo:
+\begin{eqnarray}
+\textbf{v}'(t) & = & \frac{1}{m}\textbf{F}(t, \textbf{x}, \textbf{v}) \nonumber \\
+\textbf{x}'(t) & = & \textbf{v}(t, \textbf{x}, \textbf{v})
+\label{sistema:particular}
+\end{eqnarray}
+
+Y nuestras condiciones iniciales son:
+\begin{eqnarray}
+\textbf{v}(t_0) = \textbf{v}_0 \nonumber \\
+\textbf{x}(t_0) = \textbf{x}_0
+\label{condiciones:particular}
+\end{eqnarray}
+
+Por lo tanto para resolver nuestro sistema con el método de Euler se tiene:
+
+\begin{eqnarray}
+\textbf{v}_{n+1} & = & \textbf{v}_n + \frac{h}{m}\textbf{F}(t_n, \textbf{x}_n, \textbf{v}_n)\nonumber \\
+\textbf{x}_{n+1} & = & \textbf{x}_n + h\textbf{v}_{n + 1}
+\label{formulas:Euler}
+\end{eqnarray}
+
+\subsubsection{El error del método de Euler}
+Como en todo procedimiento numérico, en el método de Euler se tiene un error, el cual puede encontrarse para nuestro caso por medio de la expansión en la serie de 
+Taylor para la función que determina la posición de una partícula.
+
+$$\textbf{x}_{n+1}  =  \textbf{x}_n + h\textbf{v}_n$$
+$$\textbf{x}(t_0 + h) = \textbf{x}(t_0) + h \textbf{v}(t_0)$$
+
+Pero sabemos que la serie de Taylor de la trayectoria de una partícula es:
+
+$$\textbf{x}(t_0 + h) = \textbf{x}(t_0) + h \textbf{x}'(t_0) + \frac{1}{2}h^2\textbf{x}''(t_0) + \textbf{O}(h^3)$$
+
+Entonces el error en el método de Euler está dado por la diferencia de ambas expresiones es decir:
+
+$$-\frac{1}{2}h^2\textbf{x}''(t_0) + \textbf{O}(h^3)$$
+
+Este error es el error de truncamiento, o debido al método en sí.
+Al momento de implementarlo existe también un error por redondeo, que es debido a que las computadoras operan con un número finito de decimales, sin embargo este error es difícil de estimar y sale del alcance de mi investigación.
+De aquí en adelante cuando me refiera al error de un método numérico siempre me referiré al \emph{error por truncamiento}.
+
+\subsubsection{Ventajas y desventajas del método de Euler}
+
+Como todo algoritmo este método presenta ventajas y desventajas, éstas se deben tanto al método como a su implementación en este modelo.
+Aquí listaré algunas de ellas.
+
+Ventajas:
+\begin{itemize}
+\item Se puede implementar fácilmente.
+\item Se puede integrar partícula por partícula, dado que sólo requiere de una evaluación de $\textbf{F}$.
+\item Es rápido de ejecutarse.
+\end{itemize}
+
+Desventajas:
+\begin{itemize}
+\item Tiende a \emph{explotar} rápidamente.
+\item Su error es alto.
+\item Es muy sensible a las variaciones pequeñas, por lo que tarda en estabilizarse.
+\end{itemize}
+
+\subsection{El método de Runge Kutta}
+Supongamos que se tiene una ecuación de la forma
+$$\textbf{y}'(t) = \textbf{f}(t, \textbf{y})$$
+Con su respectiva condición inicial de la forma $\textbf{y}(0)=\textbf{y}_0$.
+
+El método de Runge y Kutta nos dice que la solución en el siguiente paso de tiempo puede aproximarse con la siguiente fórmula de recurrencia:
+$$\textbf{y}_{n+1} = \textbf{y}_n + \frac{h \left(\textbf{k}_{n}^{1} + 2\textbf{k}_{n}^{2} + 2\textbf{k}_{n}^{3} + \textbf{k}_{n}^{4} \right)}{6} $$
+ 
+En donde $h$ representa el tamaño del paso en el tiempo que se desee aproximar y los coeficientes $\textbf{k}_{n}^{1}$, $\textbf{k}_{n}^{2}$, $\textbf{k}_{n}^{3}$, $\textbf{k}_{n}^{4}$ se pueden calcular de la siguiente manera:
+
+\begin{eqnarray}
+\textbf{k}_{n}^{1} & = & \textbf{f}(t_n, \textbf{y}_n) \nonumber \\
+\textbf{k}_{n}^{2} & = & \textbf{f}(t_n + \frac{h}{2}, \textbf{y}_n + \frac{h}{2} \textbf{k}_{n}^{1}) \nonumber \\
+\textbf{k}_{n}^{3} & = & \textbf{f}(t_n + \frac{h}{2}, \textbf{y}_n + \frac{h}{2} \textbf{k}_{n}^{2}) \nonumber \\
+\textbf{k}_{n}^{4} & = & \textbf{f}(t_n + h, \textbf{y}_n + h\textbf{k}_{n}^{3}) \nonumber
+\end{eqnarray}
+
+Al igual que en el método de Euler, existe una generalización del método de Runge Kutta para poderse ocupar con sistemas de ecuaciones de primer orden.
+En casi cualquier libro de ecuaciones se pueden ver estas fórmulas (por ejemplo en~\cite{Blanchard:Ecuaciones}); aquí solo pongo el caso $n=2$ porque es el que voy a ocupar en el modelo.
+
+Supongamos que tenemos de nuevo el sistema~\eqref{sistema:general}, sujeto a~\eqref{condiciones:general}.
+Podemos aproximar una solución usando el método de Runge Kutta con la siguiente fórmula de recurrencia, suponiendo que queremos ir de $t_n$ a $t_{n+1}$.
+
+\begin{eqnarray}
+\textbf{x}_{n+1} & = & \textbf{x}_n + \frac{h(\textbf{k}_{n}^{1} + 2\textbf{k}_{n}^{2} + 2\textbf{k}_{n}^{3} + \textbf{k}_{n}^{4})}{6} \nonumber \\
+\textbf{y}_{n+1} & = & \textbf{y}_n + \frac{h(\textbf{l}_{n}^{1} + 2\textbf{l}_{n}^{2} + 2\textbf{l}_{n}^{3} + \textbf{l}_{n}^{4}))}{6} \nonumber
+\end{eqnarray}
+
+Aquí podemos apreciar que ahora tenemos que encontrar ocho ponderadores, los $\textbf{k}_{i}^{j}$ y los $\textbf{l}_{i}^{j}$ significa que tenemos más cálculos por hacer.
+Los valores de los ponderadores se calculan con las siguientes fórmulas.
+
+\begin{eqnarray}
+\textbf{k}_{n}^{1} & = & \textbf{f}(t_n, \textbf{x}_n, \textbf{y}_n) \nonumber \\
+\textbf{k}_{n}^{2} & = & \textbf{f}(t_n + \frac{h}{2}, \textbf{x}_n + \frac{h}{2} \textbf{k}_{n}^{1}, \textbf{y}_n + \frac{h}{2}\textbf{l}_{n}^{1}) \nonumber \\
+\textbf{k}_{n}^{3} & = & \textbf{f}(t_n + \frac{h}{2}, \textbf{x}_n + \frac{h}{2} \textbf{k}_{n}^{2}, \textbf{y}_n + \frac{h}{2}\textbf{l}_{n}^{2}) \nonumber \\
+\textbf{k}_{n}^{4} & = & \textbf{f}(t_n + h, \textbf{x}_n + h\textbf{k}_{n}^{3}, \textbf{y}_n + h\textbf{l}_{n}^{3}) \nonumber
+\end{eqnarray}
+
+y
+
+\begin{eqnarray}
+\textbf{l}_{n}^{1} & = & \textbf{g}(t_n, \textbf{x}_n, \textbf{y}_n) \nonumber \\
+\textbf{l}_{n}^{2} & = & \textbf{g}(t_n + \frac{h}{2}, \textbf{x}_n + \frac{h}{2} \textbf{k}_{n}^{1}, \textbf{y}_n + \frac{h}{2}\textbf{l}_{n}^{1}) \nonumber \\
+\textbf{l}_{n}^{3} & = & \textbf{g}(t_n + \frac{h}{2}, \textbf{x}_n + \frac{h}{2} \textbf{k}_{n}^{2}, \textbf{y}_n + \frac{h}{2}\textbf{l}_{n}^{2}) \nonumber \\
+\textbf{l}_{n}^{4} & = & \textbf{g}(t_n + h, \textbf{x}_n + h\textbf{k}_{n}^{3}, \textbf{y}_n + h\textbf{l}_{n}^{3}) \nonumber
+\end{eqnarray}
+
+
+El método de Runge Kutta, es mucho más exacto que el método de Euler, de hecho se puede apreciar que el método de Euler, aproxima el siguiente paso con el valor de una pendiente, en cambio el método de Runge Kutta aproxima el siguiente paso con el valor de cuatro pendientes ponderadas, cada una calculada con la aproximación de la anterior.
+
+Supongamos que se tiene de nuevo~\eqref{sistema:particular} sujeto a las condiciones~\eqref{condiciones:particular}, entonces el método de Runge Kutta toma la siguiente forma:
+
+\begin{eqnarray}
+\textbf{v}_{n+1} & = & \textbf{v}_n + \frac{h}{6}(\textbf{k}_{n}^{1} + 2\textbf{k}_{n}^{2} + 2\textbf{k}_{n}^{3} + \textbf{k}_{n}^{4}) \nonumber \\
+\textbf{x}_{n+1} & = & \textbf{x}_n + \frac{h}{6}(\textbf{l}_{n}^{1} + 2\textbf{l}_{n}^{2} + 2\textbf{l}_{n}^{3} + \textbf{l}_{n}^{4})
+\label{formulas:RK4}
+\end{eqnarray}
+
+Y los ponderadores se pueden calcular de la siguiente manera:
+
+\begin{eqnarray}
+\textbf{k}_{n}^{1} & = & \frac{1}{m}\textbf{F}(t_n, \textbf{x}_n, \textbf{v}_n) \nonumber \\
+\textbf{l}_{n}^{1} & = & \textbf{v}_n \nonumber \\
+\textbf{k}_{n}^{2} & = & \frac{1}{m}\textbf{F}(t_n + \frac{h}{2}, \, \textbf{x}_n + \frac{h}{2}\textbf{k}_{n}^{1}, \, \textbf{v}_n + \frac{h}{2}\textbf{l}_{n}^{1}) \nonumber \\
+\textbf{l}_{n}^{2} & = & \textbf{v}_n + \frac{h}{2}\textbf{k}_{n}^{1} \nonumber \\
+\textbf{k}_{n}^{3} & = & \frac{1}{m}\textbf{F}(t_n + \frac{h}{2}, \, \textbf{x}_n + \frac{h}{2}\textbf{k}_{n}^{2}, \, \textbf{v}_n + \frac{h}{2}\textbf{l}_{n}^{2}) \nonumber \\
+\textbf{l}_{n}^{3} & = & \textbf{v}_n + \frac{h}{2}\textbf{k}_{n}^{2} \nonumber \\
+\textbf{k}_{n}^{4} & = & \frac{1}{m}\textbf{F}(t_n + h, \, \textbf{x}_n +h\textbf{k}_{n}^{3}, \, \textbf{v}_n + h\textbf{l}_{n}^{3}) \nonumber \\
+\textbf{l}_{n}^{4} & = & \textbf{v}_n + h\textbf{k}_{n}^{3}
+\label{ponderadores:RK4}
+\end{eqnarray}
+
+\subsubsection{El error del método de Runge Kutta}
+Se puede demostrar por medios algebraicos y de la misma manera que se empleó con el método de Euler que el método de Runge Kutta tiene un error del orden de $\textbf{O}(h^5)$.
+Es decir si partimos el intervalo $h$ por la mitad, y damos el doble de pasos el error por truncamiento disminuye en un orden de 16 veces (es decir $\left( \frac{h}{2} \right)^4$, como el error es del orden de $O(h^5)$ se hace $h^4$ veces más exacto).
+
+\subsubsection{Ventajas y desventajas del método de Runge Kutta}
+Como se puede leer en la bibliografía, el método de Euler y el método de Runge Kutta dependen del tamaño del paso $h$, y se hacen más exactos mientras el paso es más pequeño, pero también se hacen más cálculos, por lo que aumenta la fuente del otro tipo de error, el error por redondeo.
+Se acepta de manera general, que de este tipo de métodos, aquel que optimiza esta situación es el método de Runge Kutta de cuarto orden, el método que acabamos de presentar.
+
+Algunas de las ventajas y desventajas para el método de Runge Kutta son las siguientes.
+
+Ventajas
+\begin{itemize}
+\item Es el método estándar más recomendado y no es tan difícil de implementar (métodos más exactos son considerablemente más difíciles de implementar).
+\item Es recomendado por muchos autores y por lo tanto hay mucha documentación.
+\item Es rápido de ejecutarse, (Más lento que el Euler, pero para efectos de la animación la diferencia no es apreciable).
+\item Es un método muy estable, es muy difícil que explote.
+\end{itemize}
+
+Desventajas
+\begin{itemize}
+\item A diferencia de Euler, requiere de muchas evaluaciones de la función en diferentes puntos (lo que para nosotros significa calcular muchas veces la fuerza sobre la partícula).
+\item Las partículas no se pueden integrar por separado, tendrán que integrarse juntas. (todas las que conforman el cuerpo en un solo paso).
+\end{itemize}
+
+\section{Cómo enfrentar la colisión de los cuerpos}
+Por colisión de los cuerpos entenderemos la manera cómo lidiar cuando dos cuerpos dentro de la escena quedan en contacto uno con el otro.
+Desde nuestro punto de vista esta respuesta se divide en dos pasos: la detección de la colisión y la respuesta a la colisión.
+
+La detección es totalmente un problema geométrico, consiste en que a partir de la información que tenemos de los cuerpos y de la colisión podemos determinar el punto de la colisión y un vector normal a ese punto, este problema es totalmente dependiente de la forma de los cuerpos.
+Por otro lado, la respuesta a la colisión es un problema físico y generalmente es más sencillo debido a que ya existen algoritmos bien definidos para responder a las colisiones y son independientes de la geometría, es decir son algoritmos generales.
+
+En nuestro caso el cuerpo flexible está formado por partículas.
+Para resolver las colisiones consideramos cada partícula como un cuerpo independiente y tratamos la posible colisión de cada una con la esfera por separado.
+
+\subsection{La detección de las colisiones}
+Como ya se dijo antes la detección de las colisiones es uno de los problemas más complejos que nos podemos enfrentar al hacer una animación.
+Básicamente debemos de poder hacer dos cosas aquí: uno, detectar la colisión, es decir mediante una prueba rápida saber si los cuerpos de nuestra escena entraron en contacto, y después ver si podemos determinar un vector normal al punto (o superficie en 3D) de colisión.
+
+Hay básicamente dos tipos de estrategias para resolver este problema, una es por medio de un \emph{\textenglish{bounding volume}}, que se trata de darle la vuelta al problema con una aproximación y otra es por medios estrictamente geométricos es decir tratar de dividir tus cuerpos en figuras de formas elementales, como esferas o paralelepípedos para los cuales las detección es un poco más sencilla.
+
+\subsubsection{Un bounding volume}
+Básicamente se trata de imaginar que hay un envolvente de nuestro objeto y este envolvente tiene una forma más sencilla, entonces al probar por la colisión se prueba con el envolvente no con el objeto.
+Esto tiene la enorme desventaja de ser una aproximación, por lo que la animación se verá un poco saltada, sin embargo una cuidadosa elección del objeto envolvente hará que este efecto sea mínimo.
+
+Objetos como las elipses, los paralelepípedos y los cilindros son buenos objetos para ser un \emph{\textenglish{bounding volume}}, porque la detección de la colisión es sencilla.
+
+Por ejemplo, en una esfera podemos determinar si un punto esta dentro de ella con tan sólo comparar el cuadrado de su distancia con respecto al centro de la esfera, con el cuadrado del radio. 
+
+Un cilindro con el eje vertical alineado con el eje de la escena es también muy usado.
+Si queremos saber si dos objetos contenidos en un cilindro, por ejemplo en un videojuego dos personajes caminando, chocan, sólo debemos ver si la proyección de los ejes principales de los cilindros sobre el eje de la escena (líneas rectas) se interceptan y además las proyecciones de los dos cilindros con el plano $XZ$ (dos círculos) también se intersecan.
+
+Un paralelepípedo o rectángulo, o \emph{\textenglish{bounding box}}, también se usa mucho, por ejemplo cuando la geometría de los objetos hace a la esfera una mala elección, por ejemplo al ver si dos coches chocan en un juego de carreras el rectángulo es una elección mas sabia.
+
+Un rectángulo usado como \emph{\textenglish{bounding box}} generalmente se alinea con las coordenadas del mundo, para así hacer las pruebas de detección triviales, si  por el contrario el rectángulo es alineado con las coordenadas del objeto y este tiene la capacidad de rotar, cada vez que lo haga se necesita volver a calcular el \emph{\textenglish{bounding box}}.
+
+\subsubsection{Uniendo diferentes geometrías}
+Una manera más exacta de predecir si dos objetos de una escena están en colisión, es descomponer la forma completa de un objeto en varios objetos pequeños, y luego probar contra todos los objetos que componen el cuerpo si es que existió la colisión.
+Por ejemplo, en el caso de la simulación del cuerpo flexible se podría pensar como que cada partícula que forma el cuerpo es un objeto y luego probar la colisión contra todas las partículas que forman el cuerpo flexible.
+
+Esta técnica es bastante más cara, tanto de implementar como de ejecutarse, sin embargo, da resultados visiblemente más acertados, por ejemplo en un juego de lucha libre, donde la interacción de los luchadores debe de ser bastante creíble, se recomendaría usar este tipo de colisiones.
+
+\subsection{La respuesta de las colisiones}
+
+Como ya habíamos dicho, el trabajo difícil y dependiente de la animación está en la detección de las colisiones, y la respuesta a las colisiones es totalmente física.
+Para empezar las colisiones se dividen en dos: elásticas e inelásticas.
+La implementación de ambas no se diferencia mucho, aunque sí son diferentes en concepto.
+
+Básicamente en un algoritmo de respuesta de colisiones, se suministran las posiciones y las velocidades de los dos objetos que colisionan, más un vector normal unitario al punto de colisión de los dos objetos, o plano normal en el caso de tres dimensiones.
+Desde luego que hay dos vectores que cumplen con esa condición, cualquiera de ellos nos servirá siempre y cuando sepamos cuál de ellos es el que tenemos.
+Ya con esta información debemos ser capaces de responder con dos cosas: una nueva posición de los objetos y una nueva velocidad.
+
+En la Figura~\ref{colision:fig} se ven los diferentes pasos de la respuesta a la colisión de dos círculos.
+
+\subsubsection{Separar un vector en componentes normal y tangencial}
+
+Antes de explicar la forma en que se responden las colisiones quiero hacer énfasis en la manera cómo separar un vector en componentes ortogonales (Figura \ref{comVec:fig}), porqué es necesario hacerlo en la respuesta a las colisiones.
+
+Para separar a un vector cualquiera $\textbf{v}$ en dos componentes: uno normal $\textbf{v}_n$, y otro tangencial $\textbf{v}_t$ respecto a un vector normal $\textbf{n}$, se hace uso de las siguientes fórmulas:
+
+\begin{eqnarray}
+\textbf{v}_n & = &\frac{(\textbf{v} \cdot \textbf{n})}{|\textbf{n}|} \frac{\textbf{n}}{|\textbf{n}|} \nonumber \\
+\textbf{v}_t & = & \textbf{v} - \textbf{v}_n \nonumber
+\end{eqnarray}
+
+Como en los cálculos de detección de colisiones es común que tengamos un vector normal $\vec{\textbf{n}}$, tal que: $|\vec{\textbf{n}}| = 1$, las fórmulas anteriores se simplifican aún más siendo la forma más usada las ecuaciones~\eqref{eq:sepVector}\footnote{Las fórmulas~\eqref{eq:sepVector}, se encuentran mal escritas en~\cite{BaraffWitkin:Coursenotes}, y esta fue una de las razones que más me retrasó al momento de hacer este trabajo.}:
+
+\begin{eqnarray}
+\textbf{v}_n & = &(\textbf{v} \cdot \vec{\textbf{n}}) \vec{\textbf{n}} \nonumber \\
+\textbf{v}_t & = & \textbf{v} - \textbf{v}_n
+\label{eq:sepVector} 
+\end{eqnarray}
+
+\subsubsection{Colisiones elásticas}
+
+Una colisión elástica es aquella donde el momento y la energía de los objetos, se conservan después de la colisión; son una abstracción que nunca sucede en la vida real.
+Aun las colisiones en el espacio exterior son inelásticas aunque están muy cerca de no serlo~\cite{FisicaMatematicasVideojuegos}, pero nos sirven bastante para entender el fenómeno, y en algunos casos son suficientes.
+Por ejemplo, pensemos que estamos modelando un juego de billar en 2D una colisión elástica es suficiente.
+
+Supongamos que se tienen dos cuerpos $A$ y $B$ (Figura~\ref{fig:coliAntes}), las formas no importan, y sabemos, gracias a un algoritmo de detección de colisiones, que están en colisión (Figura~\ref{fig:coliDetecta}) y un vector normal $\vec{\textbf{n}}$ a la superficie de colisión.
+Suponemos que este vector apunta del cuerpo $A$ al cuerpo $B$ y que es también un vector unitario (Figura~\ref{fig:coliResponde}).
+
+\begin{figure}
+ \centering
+  \begin{subfigure}[b]{0.32\textwidth}
+    \includegraphics[width=1.2\textwidth]{img/02/colisionesAntes}
+    \caption{Antes de la colisión.}
+    \label{fig:coliAntes}
+  \end{subfigure}
+  \hspace{2cm}
+  \begin{subfigure}[b]{0.32\textwidth}
+    \includegraphics[width=0.75\textwidth]{img/02/colisionesDetecta}
+    \caption{Colisión detectada}
+    \label{fig:coliDetecta}
+  \end{subfigure}
+\\
+\vspace{1cm}
+  \begin{subfigure}[b]{0.32\textwidth}
+    \includegraphics[width=0.8\textwidth]{img/02/colisionesResponde}
+    \caption{Respuesta a la colisión.}
+    \label{fig:coliResponde}
+  \end{subfigure}
+  \hspace{2cm}
+  \begin{subfigure}[b]{0.32\textwidth}
+    \includegraphics[width=1.1\textwidth]{img/02/colisionesAjusta}
+    \caption{Después de la colisión}
+    \label{fig:coliAjusta}
+  \end{subfigure}
+ \caption[Colisión elástica]{Etapas de detección y respuesta a una colisión} 
+ \label{colision:fig}
+\end{figure}
+
+Suponemos también que conocemos todas las propiedades de los cuerpos, es decir su masa, su velocidad y su posición.
+
+Queremos determinar una nueva posición y una nueva velocidad para los objetos como resultado de la colisión entre ellos (Figura~\ref{fig:coliAjusta}).
+Esto se resume en el Cuadro~\ref{condiciones:Colision}.
+
+\begin{table}
+\ra{1.2}
+\begin{center}
+\begin{tabular} {@{}lll@{}}
+\toprule
+Objeto & Información conocida & Información por determinar \\
+\midrule
+$A$ & Masa $m$, Velocidad $\textbf{u}$ & Velocidad ajustada $\textbf{s}$ \\
+$B$ & Masa $p$, Velocidad $\textbf{v}$ & Velocidad ajustada $\textbf{w}$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+\caption{Condiciones de la respuesta a las colisiones}
+\label{condiciones:Colision}
+\end{table}
+
+Para entender el porqué de la respuesta a la colisión, es necesario seguir los siguientes pasos\footnote{Esta es una reproducción del procedimiento mostrado en~\cite{FisicaMatematicasVideojuegos} con mi nomenclatura}.
+Primero vamos por el caso más simple: dos objetos $A$ y $B$, con velocidades $\textbf{u}$ y $\textbf{v}$ respectivamente chocan, como respuesta a la colisión las velocidades de ambos objetos cambian a $\textbf{s}$ y $\textbf{w}$.
+Ver la Figura~\ref{colision:fig}.
+
+Suponemos que: $\textbf{v} = \textbf{0}$. Es decir el cuerpo $B$ no se mueve, está detenido esperando la colisión del cuerpo $A$. Sabemos que tenemos un vector $\vec{\textbf{n}}$ normal al plano de colisión.
+Con este vector podemos dividir los demás vectores en una parte normal al plano y otra tangencial  (Figura~\ref{comVec:fig}), es decir:
+
+\begin{figure}
+ \centering
+ \includegraphics[width=7cm]{img/02/vector_componente}
+ \caption[Separar componente tangencial y normal de un vector]{ 
+ El vector $\textbf{u}$ se separa con respecto a $\textbf{n}$ en dos vectores uno normal $\textbf{u}_n$, y uno tangencial $\textbf{u}_t$ 
+ } \label{comVec:fig}
+\end{figure}
+
+\begin{eqnarray}
+ \textbf{u} & = & \textbf{u}_t + \textbf{u}_n \nonumber \\
+ \textbf{v} & = & \textbf{v}_t + \textbf{v}_n \nonumber \\
+ \textbf{s} & = & \textbf{s}_t + \textbf{s}_n \nonumber \\
+ \textbf{w} & = & \textbf{w}_t + \textbf{w}_n \nonumber
+\end{eqnarray}
+
+Ahora veamos qué es lo qué sabemos de antemano por la forma como planteamos las condiciones del problema: sabemos que: $\textbf{u}_t = \textbf{s}_t$ y $\textbf{v}_t = \textbf{w}_t = \textbf{0}$, porque esperaríamos que las velocidades sólo se vieran afectadas en su componente normal y porque sabemos que el objeto $B$ estaba inicialmente en reposo.
+Así que lo único que necesitamos saber es $\textbf{s}_n$ y $\textbf{w}_n$.
+
+Se sabe también que, como la colisión es elástica, debe de obedecer la ley de la conservación de la energía~\eqref{eq:energia} y la la ley de la conservación de momento~\eqref{eq:momento}.
+
+\begin{equation}
+m \textbf{u}_n = m \textbf{s}_n + p \textbf{w}_n
+\label{eq:momento}
+\end{equation}
+
+\begin{equation}
+\frac{1}{2} m \textbf{u}^2 = \frac{1}{2} m \textbf{s}^2 + \frac{1}{2} p \textbf{w}^2
+\label{eq:energia}
+\end{equation}
+
+Así que tenemos justo las condiciones necesarias para encontrar una solución, pues tenemos dos valores por determinar y dos ecuaciones que las relacionan.
+Para encontrar la solución hacemos un cambio de variable $r = \frac{m}{p}$.
+Podemos encontrar una expresión para $\textbf{w}_n$ de la ecuación~\eqref{eq:momento}, y lo sustituimos en~\eqref{eq:energia} para obtener el valor de $\textbf{s}_n$. En realidad se obtienen dos valores $\textbf{s}_{n}^{1} = \textbf{u}_n$ y $\textbf{s}_{n}^{2} = \textbf{u}_n \frac{r-1}{r+1}$, tomamos el segundo (el primero corresponde a la condición inicial, por que las colisiones elásticas son reversibles en el tiempo), y lo sustituimos de nuevo en~\eqref{eq:momento} para obtener el valor de $\textbf{w}_n = \frac{2 r \textbf{u}_n}{r + 1}$.
+
+Con esto se tiene todo lo necesario  para resolver una colisión elástica con uno de los dos objetos en reposo. Podemos utilizar el siguiente pseudocódigo:
+
+{\centering
+\begin{minipage}{\linewidth}
+  \begin{algorithm}[H]
+    \caption{Respuesta a una colisión elástica}
+    \label{alg:elas}
+    \begin{algorithmic}[1] % The number tells where the line numbering should start 0 for no number
+\Procedure{RespuestaColisionElastica}{$\textbf{u}, \textbf{n}, m, p$}
+\State $r \gets \frac{m}{p}$
+\State $\textbf{u}_n \gets$ \Call{parteNormal}{$\textbf{u}, \textbf{n}$}
+\State $\textbf{u}_t \gets \textbf{u} - \textbf{u}_n$
+\State $\textbf{s}_n \gets \textbf{u}_n \left( \frac{r - 1}{r + 1} \right) $
+\State $\textbf{w}_n \gets \textbf{u}_n \left( \frac{2r}{r + 1} \right) $
+\State $\textbf{s} \gets \textbf{u}_t + \textbf{s}_n$
+\State $\textbf{w} \gets \textbf{w}_n$
+\State \Return{$\textbf{s}, \textbf{w}$}
+\EndProcedure
+\Procedure{parteNormal}{$\textbf{v}, \textbf{n}$}
+\State $\textbf{v}_n \gets \frac{(\textbf{v} \cdot \textbf{n})}{|\textbf{n}|} \frac{\textbf{n}}{|\textbf{n}|}$
+\State \Return{$\textbf{v}_n$}
+\EndProcedure
+    \end{algorithmic}
+  \end{algorithm}
+\end{minipage}
+\par
+}
+
+En donde la función \mintinline{cpp}{parteNormal}, es una función que recibe un vector $\textbf{u}$ y un vector $\textbf{n}$, devuelve la parte normal de $\textbf{u}$ con respecto a $\textbf{n}$.
+Es decir, nos sirve para partir al vector $\textbf{u}$ en una parte tangencial y una parte normal a la colisión haciendo uso de las fórmulas \eqref{eq:sepVector}.
+
+Ahora veamos el caso más general, donde $\textbf{v} \neq \textbf{0}$. Aquí vamos a ocupar el principio de relatividad y le restamos a todo el sistema $\textbf{v}$, lo que lo transforma en el caso anterior. Resolvemos como lo habíamos hecho antes y luego le sumamos a todo el sistema $\textbf{v}$. El pseudocódigo es casi idéntico:
+ 
+{\centering
+\begin{minipage}{\linewidth}
+  \begin{algorithm}[H]
+    \caption{Respuesta a una colisión elástica con ambos cuerpos en movimiento}
+    \label{alg:elasmov}
+    \begin{algorithmic}[1] % The number tells where the line numbering should start 0 for no number
+\Procedure{RespuestaColisionElastica}{$\textbf{u}, \textbf{v}, \textbf{n}, m, p$}
+\State $r \gets \frac{m}{p}$
+\State $\textbf{u} \gets \textbf{u} - \textbf{v}$
+\State $\textbf{u}_n \gets$ \Call{parteNormal}{$\textbf{u}, \textbf{n}$}
+\State $\textbf{u}_t \gets \textbf{u} - \textbf{u}_n$
+\State $\textbf{s}_n \gets \textbf{u}_n \left( \frac{r - 1}{r + 1} \right) $
+\State $\textbf{w}_n \gets \textbf{u}_n \left( \frac{2r}{r + 1} \right) $
+\State $\textbf{s} \gets \textbf{u}_t + \textbf{s}_n + \textbf{v}$
+\State $\textbf{w} \gets \textbf{w}_n + \textbf{v}$
+\State \Return{$\textbf{s}, \textbf{w}$}
+\EndProcedure
+    \end{algorithmic}
+  \end{algorithm}
+\end{minipage}
+\par
+}
+
+Con esto podemos programar un función general que resuelva colisiones elásticas, sólo debemos asegurarnos de que la función que detecta las colisiones le informe a aquella función de tres cosas: las propiedades del objeto $A$, las propiedades del objeto $B$ y un vector normal al plano de colisión que vaya de $A$ a $B$.
+
+Vuelvo a hacer énfasis en que para nuestro caso, la colisión de cada partícula con la esfera debe resolverse de manera separada e independiente.
+
+\subsubsection{Colisiones inelásticas}
+En una colisión inelástica se tiene una pérdida de energía como respuesta al impacto.
+En la realidad las colisiones son inelásticas, podemos apreciar parte de la pérdida de la energía, al escuchar el sonido de la colisión.
+Por ejemplo en el billar.
+
+Para simular una colisión inelástica, vamos también a hacer una suposición: que los objetos tienen una cierta eficiencia, y que ésta se mantiene fija para todas las colisiones que involucran ese objeto.
+Es una gran simplificación porque en la realidad la eficiencia de una colisión depende de muchos factores, como el medio ambiente, o la velocidad de los objetos al momento de la colisión.
+
+Si dos objetos chocan y uno de ellos tiene \emph{coeficiente de restitución} de 0.9 y el otro un coeficiente de restitución de 0.85, la energía total después de la colisión sería: $\left( \text{0.9} \cdot \text{0.85} \right) \left(  E_b + E_a \right)$.
+Donde $E_a$ y $E_b$ es la energía de cada objeto antes de la colisión.
+Como se puede ver, el coeficiente de restitución es una manera de medir la \emph{eficiencia} y significa que el primer objeto después de una colisión transmite por ejemplo el 95 por ciento de su energía.
+
+Para resolver una colisión inelástica se usa el mismo procedimiento que en la sección anterior, sólo que ahora la ecuación~\eqref{eq:energia}, toma la siguiente forma:
+\begin{equation}
+ \frac{1}{2} e m \textbf{u}^2 = \frac{1}{2} m \textbf{s}^2 + \frac{1}{2} p \textbf{w}^2
+ \label{eq:energiaIne} 
+\end{equation} 
+
+Donde $e$ es el producto de los coeficientes de restitución de ambos objetos. Y se procede de la misma manera que en el caso anterior a calcular los valores de $\textbf{w}_n$ y $\textbf{s}_n$. Resolviendo el sistema formado por las ecuaciones~\eqref{eq:momento} y~\eqref{eq:energiaIne}.
+
+Las nuevas soluciones son: 
+\begin{eqnarray}
+\textbf{s}_n & = & \frac{-r\textbf{u} - \sqrt{r^{2} \textbf{u}_{n}^{2} - \left( r + 1\right)  \left( (r - e) \textbf{u}_{n}^{2} + (1 -e) \textbf{u}_{t}^{2} \right) } } { r + 1} \nonumber \\
+\textbf{w}_n & = & r \left(  n \textbf{u}_n - \textbf{v}_n \right) \nonumber
+\end{eqnarray}
+
+Y el pseudocódigo, que resuelve la colisión de manera inelástica es el siguiente:
+
+{\centering
+\begin{minipage}{\linewidth}
+  \begin{algorithm}[H]
+    \caption{Respuesta general a una colisión inelástica}
+    \label{alg:inelas}
+    \begin{algorithmic}[1] % The number tells where the line numbering should start 0 for no number
+\Procedure{RespuestaColisionInelastica}{$\textbf{u}, \textbf{v}, \textbf{n}, m, p, E_a, E_b$}
+\State $r \gets \frac{m}{p}$
+\State $e \gets E_a \cdot E_b$
+\State $\textbf{u} \gets \textbf{u} - \textbf{v}$
+\State $\textbf{u}_n \gets$ \Call{parteNormal}{$\textbf{u}, \textbf{n}$}
+\State $\textbf{u}_t \gets \textbf{u} - \textbf{u}_n$
+\State $ d \gets r^{2} \left(  \textbf{u}_n \cdot \textbf{u}_n \right) - \left( (r - e) (\textbf{u}_n \cdot \textbf{u}_n) + (1 - e) (\textbf{u}_t \cdot \textbf{u}_t) \right) $
+\State $\textbf{s}_n \gets \textbf{n} \left( \frac{ \sqrt{d} - r \textbf{u}_n }{r + 1} \right) $
+\State $\textbf{w}_n \gets r \left( \frac{\textbf{u}_n - \textbf{v}_n}{r + 1} \right) $
+\State $\textbf{s} \gets \textbf{u}_t + \textbf{s}_n + \textbf{v}$
+\State $\textbf{w} \gets \textbf{w}_n + \textbf{v}$
+\State \Return{$\textbf{s}, \textbf{w}$}
+\EndProcedure
+    \end{algorithmic}
+  \end{algorithm}
+\end{minipage}
+\par
+}
