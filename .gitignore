@@ -274,3 +274,18 @@ TSWLatexianTemp*
 
 # Makeindex log files
 *.lpz
+
+# kile project
+texto/.kile/
+
+# C++ object files
+programa/*.o
+
+# Imgui menu
+programa/imgui.ini
+
+# Performance stats
+programa/logStats.csv
+
+# Program executable
+programa/soft_body
