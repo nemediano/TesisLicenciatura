@@ -8,7 +8,7 @@ c_2 <- 3.0
 L <- 3.0
 # f(x) values
 y_values <- exp((-1.0 * alpha) * t_values) *
-            ((c_1 * cos(beta * t_values)) + (c_2 * beta * sin(t_values))) + L
+            ((c_1 * cos(beta * t_values)) + (c_2 * sin(beta * t_values))) + L
 plot(t_values, y_values, # Values in X, Values in Y
      xlab = "t",  # Label for X-axis
      ylab = "x(t)", # Label for Y-axis
