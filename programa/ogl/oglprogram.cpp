@@ -8,7 +8,7 @@ namespace ogl {
 
 using namespace std;
 
-OGLProgram::OGLProgram(string vertex_shader_file_name, string fragment_shader_file_name) {
+OGLProgram::OGLProgram(string vertex_shader_file_name, string fragment_shader_file_name) : m_has_geometry(false) {
 
   m_program_ok = true;
   /* Read shader's source code from input files */
